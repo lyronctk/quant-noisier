@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ..ops import emulate_int
-from ..... import utils
+from ... import fairseq_utils as utils
 
 from torch import Tensor
 from typing import Dict, Optional

@@ -6,6 +6,7 @@ from copy import deepcopy
 from src.systems.recognition import CTC_System
 from src.systems.setup import process_config
 from src.utils import load_json
+from quantization.utils import quantize_ctc_system
 import pytorch_lightning as pl
 import wandb
 
@@ -18,6 +19,8 @@ def run(config_path, gpu_device=-1):
     seed_everything(config.seed)
     SystemClass = globals()[config.system]
     system = SystemClass(config)
+    system = quantize_ctc_system(system, config)
+    exit()
 
     ckpt_callback = pl.callbacks.ModelCheckpoint(
         os.path.join(config.exp_dir, 'checkpoints'),

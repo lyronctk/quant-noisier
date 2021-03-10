@@ -11,7 +11,7 @@ import torch.nn as nn
 
 from ..pq.utils import attrsetter, get_layers
 from .modules import ActivationQuantizer, IntConv2d, IntEmbedding, IntLinear, IntLearnedPositionalEmbedding
-from ...learned_positional_embedding import LearnedPositionalEmbedding
+from .learned_positional_embedding import LearnedPositionalEmbedding
 
 MAPPING = {nn.Linear: IntLinear, nn.Embedding: IntEmbedding, nn.Conv2d: IntConv2d, LearnedPositionalEmbedding: IntLearnedPositionalEmbedding}
 #MAPPING = {nn.Linear: IntLinear, nn.Embedding: IntEmbedding, nn.Conv2d: IntConv2d}

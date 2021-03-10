@@ -15,6 +15,9 @@
         "min_speaker_utterances": 10,
         "speaker_split": false
     },
+    "quant_params": {
+        "bits": 8
+    },
     "model_params": {
 	    "cnn_ctc": false,
         "num_layers": 2,
