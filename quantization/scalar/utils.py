@@ -29,8 +29,11 @@ def quantize_model_(model, p=0.2, bits=8, update_step=3000, jitter=False):
     """
 
     # quantize all layers
-    quantized_layers = get_layers(model, "(.*?)")
 
+    quantized_layers = get_layers(model, "(.*?)")
+    print(model)
+    print(quantized_layers)
+    exit()
     for layer in quantized_layers:
 
         # book-keeping
