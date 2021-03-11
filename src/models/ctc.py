@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import torch.nn.utils.rnn as rnn_utils
 
 from src.utils import edit_distance, levenshtein
-
+from quantization.scalar.modules.qlstm import LSTMFrame, LSTMCell
 
 class ConnectionistTemporalClassification(nn.Module):
 
@@ -21,13 +21,33 @@ class ConnectionistTemporalClassification(nn.Module):
         ):
         super().__init__()
 
-        self.rnn = nn.LSTM(
-            input_dim, 
-            hidden_dim, 
-            num_layers=num_layers, 
+        if num_layers != 2 or not bidirectional:
+            raise ValueError('Currently only supports a 2-layer bidirectional LSTM.')
+
+        rnn_cells = [ 
+            [ # bidirectional layer #1
+                LSTMCell(input_dim, hidden_dim), 
+                LSTMCell(input_dim, hidden_dim)
+            ],  
+            [
+                LSTMCell(hidden_dim * 2, hidden_dim), 
+                LSTMCell(hidden_dim * 2, hidden_dim)
+            ] 
+        ]
+        self.rnn = LSTMFrame(
+            rnn_cells,
+            dropout=0,
             bidirectional=bidirectional,
-            batch_first=True,
         )
+        # WILL LIKELY ERROR AT BATCH_FIRST 
+
+        # self.rnn = nn.LSTM(
+        #     input_dim, 
+        #     hidden_dim, 
+        #     num_layers=num_layers, 
+        #     bidirectional=bidirectional,
+        #     batch_first=True,
+        # )
         self.word_fc = nn.Linear(hidden_dim * 2, num_class)
         self.input_dim = input_dim
         self.num_class = num_class
@@ -55,6 +75,7 @@ class ConnectionistTemporalClassification(nn.Module):
             padding_value=0.,
             total_length=maxlen,
         )
+
         # outputs : batch_size * maxlen x hidden_dim*2
         outputs = outputs.view(-1, self.hidden_dim*2)
         # logits : batch_size * maxlen x num_class
