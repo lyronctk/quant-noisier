@@ -14,7 +14,6 @@ from .modules import ActivationQuantizer, IntConv2d, IntEmbedding, IntLinear, In
 from .learned_positional_embedding import LearnedPositionalEmbedding
 
 MAPPING = {nn.Linear: IntLinear, nn.Embedding: IntEmbedding, nn.Conv2d: IntConv2d, LearnedPositionalEmbedding: IntLearnedPositionalEmbedding}
-#MAPPING = {nn.Linear: IntLinear, nn.Embedding: IntEmbedding, nn.Conv2d: IntConv2d}
 
 def quantize_model_(model, p=0.2, bits=8, update_step=3000, jitter=False):
     """
@@ -31,9 +30,6 @@ def quantize_model_(model, p=0.2, bits=8, update_step=3000, jitter=False):
     # quantize all layers
 
     quantized_layers = get_layers(model, "(.*?)")
-    print(model)
-    print(quantized_layers)
-    exit()
     for layer in quantized_layers:
 
         # book-keeping

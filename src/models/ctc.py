@@ -39,6 +39,7 @@ class ConnectionistTemporalClassification(nn.Module):
             rnn_cells,
             dropout=0,
             bidirectional=bidirectional,
+            batch_first=True,
         )
 
         self.word_fc = nn.Linear(hidden_dim * 2, num_class)
@@ -51,11 +52,11 @@ class ConnectionistTemporalClassification(nn.Module):
 
     def forward(self, inputs, input_lengths):
         batch_size, maxlen, _ = inputs.size()
-        inputs = inputs.permute(1, 0, 2)
         inputs = rnn_utils.pack_padded_sequence(
             inputs, 
             input_lengths, 
             enforce_sorted=False,
+            batch_first=True
         )
 
         # outputs : batch_size x maxlen x hidden_dim
@@ -66,8 +67,8 @@ class ConnectionistTemporalClassification(nn.Module):
             outputs, 
             padding_value=0.,
             total_length=maxlen,
+            batch_first=True
         )
-        outputs = outputs.permute(1, 0, 2)
 
         # outputs : batch_size * maxlen x hidden_dim*2
         outputs = outputs.reshape(-1, self.hidden_dim*2)

@@ -4,8 +4,10 @@ Native PyTorch LSTM implementation adapted from https://github.com/daehwannam/py
 
 import torch.nn as nn
 import torch
+import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
+from ..ops import emulate_int
 from .common import no_dropout, no_layer_norm, get_indicator, get_module_device
 
 
@@ -77,7 +79,7 @@ class LSTMFrame(nn.Module):
             uniform_length = True
 
         if not uniform_length:
-            indicator = get_indicator(torch.tensor(lengths), device=get_module_device(self))
+            indicator = get_indicator(lengths, device=get_module_device(self))
             # valid_example_nums = indicator.sum(0)
 
         if init_state is None:
@@ -167,28 +169,32 @@ class LSTMFrame(nn.Module):
 
 
 class LSTMCell(nn.Module):
-    """
-    standard LSTM cell
-    """
 
     def __init__(self, input_size, hidden_size):
         super().__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
-        self.fiou_linear = nn.Linear(input_size + hidden_size, hidden_size * 4)
+
+        in_features = input_size + hidden_size 
+        out_features = hidden_size * 4
+
+        self.weight = torch.nn.Parameter(torch.Tensor(out_features, in_features))
+        self.bias = torch.nn.Parameter(torch.Tensor(out_features))
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        nn.init.xavier_uniform_(self.weight)
+        nn.init.constant_(self.bias, 0.0)
 
     def forward(self, input, state):
-        """
-        :param input: a tensor of of shape (batch_size, input_size)
-        :param state: a pair of a hidden tensor and a cell tensor whose shape is (batch_size, hidden_size).
-                      ex. (h_0, c_0)
-        :returns: 1-dimensional hidden and cell
-        """
         hidden_tensor, cell_tensor = state
 
+        cat_input = torch.cat([input, hidden_tensor], dim=1)
         fio_linear, u_linear = torch.split(
-            self.fiou_linear(torch.cat([input, hidden_tensor], dim=1)),
-            self.hidden_size * 3, dim=1)
+            F.linear(cat_input, self.weight, self.bias),
+            self.hidden_size * 3, 
+            dim=1
+        )
 
         f, i, o = torch.split(torch.sigmoid(fio_linear),
                               self.hidden_size, dim=1)
