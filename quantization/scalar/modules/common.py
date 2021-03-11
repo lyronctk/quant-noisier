@@ -14,14 +14,15 @@ no_dropout.p = 0
 def no_layer_norm(x): return x
 
 
-def get_indicator(length_tensor, max_length=None):
+def get_indicator(length_tensor, device, max_length=None):
+    length_tensor = length_tensor.to(device)
     lengths_size = length_tensor.size()
 
     flat_lengths = length_tensor.view(-1, 1)
 
     if not max_length:
         max_length = length_tensor.max()
-    unit_range = torch.arange(max_length)
+    unit_range = torch.arange(max_length).to(device)
     # flat_range = torch.stack([unit_range] * flat_lengths.size()[0],
     #                          dim=0)
     flat_range = unit_range.repeat(flat_lengths.size()[0], 1)

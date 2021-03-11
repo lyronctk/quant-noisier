@@ -42,8 +42,16 @@ class LSTMFrame(nn.Module):
         multiplier = 1 if shift_right else -1
         example_seqs = torch.split(seq, 1, dim=1)
         max_length = max(lengths)
-        shifted_seqs = [example_seq.roll((max_length - length) * multiplier, dims=0)
-                        for example_seq, length in zip(example_seqs, lengths)]
+
+        # pdb.set_trace()
+        shifted_seqs = [
+            torch.roll(
+                example_seq, 
+                (max_length.item() - length.item()) * multiplier, 
+                dims=0
+            )
+            for example_seq, length in zip(example_seqs, lengths)
+        ]
         return torch.cat(shifted_seqs, dim=1)
 
     def forward(self, input, init_state=None):
@@ -69,7 +77,7 @@ class LSTMFrame(nn.Module):
             uniform_length = True
 
         if not uniform_length:
-            indicator = get_indicator(torch.tensor(lengths, device=get_module_device(self)))
+            indicator = get_indicator(torch.tensor(lengths), device=get_module_device(self))
             # valid_example_nums = indicator.sum(0)
 
         if init_state is None:
@@ -115,16 +123,9 @@ class LSTMFrame(nn.Module):
                         self.align_sequence(layer_input, lengths, True))))
 
                 for seq_idx, cell_input in step_input_gen:
-                    # if not uniform_length:  # for speed enhancement
-                    #     cell_input = cell_input[:valid_example_nums[seq_idx]]
-                    #     step_state = step_state[:valid_example_nums[seq_idx]]
                     h, c = step_state = cell(cell_input, step_state)
-                    # if uniform_length:
                     direction_output[seq_idx] = h
                     step_state_list.append(step_state)
-                    # else:       # for speed enhancement
-                    #     direction_output[seq_idx][? :?] = h
-                    #     step_state_list.append(step_state)
                 if direction == 1 and not uniform_length:
                     direction_output = self.align_sequence(
                         direction_output, lengths, False)
@@ -160,7 +161,7 @@ class LSTMFrame(nn.Module):
 
         if input_packed:
             # always batch_first=False --> trick to process input regardless of batch_first option
-            output = pack_padded_sequence(output, lengths)
+            output = pack_padded_sequence(output, lengths, enforce_sorted=False)
 
         return output, (last_hidden_tensor, last_cell_tensor)
 
@@ -175,12 +176,6 @@ class LSTMCell(nn.Module):
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.fiou_linear = nn.Linear(input_size + hidden_size, hidden_size * 4)
-        # self.reset_parameters()
-
-    # def reset_parameters(self):
-    #     stdv = 1.0 / math.sqrt(self.hidden_size)
-    #     for weight in self.parameters():
-    #         weight.data.uniform_(-stdv, stdv)
 
     def forward(self, input, state):
         """
