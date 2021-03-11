@@ -9,4 +9,5 @@ Largely built off of work from:
       - Original paper found here: https://arxiv.org/pdf/2004.07320.pdf
       - Original repository found here: https://github.com/pytorch/fairseq/tree/master/examples/quant_noise
 
-
+  1. LSTMFrame by Daehwan Nam (2019)
+      - Original repository found here: https://github.com/daehwannam/pytorch-rnn-util
