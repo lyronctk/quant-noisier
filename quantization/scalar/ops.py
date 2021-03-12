@@ -19,7 +19,7 @@ def quantize(w, scale, zero_point, size=8):
         ) * scale
     elif size == 4:
         return (
-            torch.clamp(torch.round(w / scale + zero_point), 0, 127) - zero_point
+            torch.clamp(torch.round(w / scale + zero_point), 0, 15) - zero_point
         ) * scale
     elif size == 1:
         return (
@@ -65,13 +65,18 @@ def emulate_int1_tensor(w, scale=None, zero_point=None):
 def emulate_int4_histogram(w, scale=None, zero_point=None):
     if scale is None:
         obs = torch.quantization.observer.HistogramObserver()
-        obs.quant_min, obs.quant_max = 0, 127
+        obs.quant_min, obs.quant_max = 0, 15
         obs.has_customized_qrange = True
         _ = obs(w.float())
+        # scale, zero_point = calculate_uint4_qparams()
         scale, zero_point = obs.calculate_qparams()
         scale = scale.cuda().type_as(w)
         zero_point = zero_point.cuda().type_as(w)
     return quantize(w, scale, zero_point, size=4), scale, zero_point
+
+
+def calculate_uint4_qparams():
+    pass
 
 
 def emulate_int4_channel(w, scale=None, zero_point=None):
@@ -79,7 +84,7 @@ def emulate_int4_channel(w, scale=None, zero_point=None):
         obs = torch.quantization.observer.PerChannelMinMaxObserver(
             ch_axis=-1, qscheme=torch.per_channel_symmetric
         )
-        obs.quant_min, obs.quant_max = 0, 127
+        obs.quant_min, obs.quant_max = 0, 15
         obs.has_customized_qrange = True
         _ = obs(w)
         scale, zero_point, ch_axis = obs.get_qparams()
@@ -90,7 +95,7 @@ def emulate_int4_channel(w, scale=None, zero_point=None):
 def emulate_int4_tensor(w, scale=None, zero_point=None):
     if scale is None:
         obs = torch.quantization.observer.MinMaxObserver()
-        obs.quant_min, obs.quant_max = 0, 127
+        obs.quant_min, obs.quant_max = 0, 15
         obs.has_customized_qrange = True
         _ = obs(w)
         scale, zero_point = obs.calculate_qparams()
