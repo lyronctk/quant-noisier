@@ -56,6 +56,16 @@ class ActivationQuantizer:
         # forward hook
         def quantize_hook(module, x, y):
 
+            y_is_tuple = False
+            if type(y) == tuple:
+                # Handle case where forward function 
+                # returns a state along with the
+                # output. Eg. RNN-based modules
+                if len(y) != 2:
+                    raise ValueError('quantize_hook() currently only supports forward() fuctions with one or two return values. (eg. 1 activation OR 1 hidden state + 1 cell state)')
+                y_is_tuple = True
+                y = torch.cat(y, 0)
+
             # update parameters every 1000 iterations
             if self.counter % self.update_step == 0:
                 self.scale = None
@@ -82,7 +92,16 @@ class ActivationQuantizer:
             # using straight-through estimator (STE)
             clamp_low = -self.scale * self.zero_point
             clamp_high = self.scale * (2 ** self.bits - 1 - self.zero_point)
-            return torch.clamp(y, clamp_low.item(), clamp_high.item()) + noise.detach()
+            output = torch.clamp(y, clamp_low.item(), clamp_high.item()) + noise.detach()
+            
+            if y_is_tuple:
+                # Handle case where forward function 
+                # returns a state along with the
+                # output. Eg. RNN-based modules
+                y = torch.split(y, int(len(y) / 2))
+                output = torch.split(output, int(len(output) / 2))
+
+            return output
 
         # register hook
         self.handle = self.module.register_forward_hook(quantize_hook)

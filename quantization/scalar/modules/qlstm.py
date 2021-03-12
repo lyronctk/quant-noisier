@@ -56,7 +56,7 @@ class LSTMFrame(nn.Module):
         ]
         return torch.cat(shifted_seqs, dim=1)
 
-    def forward(self, input, init_state=None):
+    def forward(self, input, init_state=None, p_delta=0.0):
         """
         :param input: a tensor(s) of shape (seq_len, batch, input_size)
         :param init_state: (h_0, c_0) where the size of both is (num_layers * num_directions, batch, hidden_size)
@@ -125,7 +125,7 @@ class LSTMFrame(nn.Module):
                         self.align_sequence(layer_input, lengths, True))))
 
                 for seq_idx, cell_input in step_input_gen:
-                    h, c = step_state = cell(cell_input, step_state)
+                    h, c = step_state = cell(cell_input, step_state, p_delta)
                     direction_output[seq_idx] = h
                     step_state_list.append(step_state)
                 if direction == 1 and not uniform_length:
@@ -198,6 +198,102 @@ class LSTMCell(nn.Module):
 
         f, i, o = torch.split(torch.sigmoid(fio_linear),
                               self.hidden_size, dim=1)
+        u = torch.tanh(u_linear)
+
+        new_cell = i * u + (f * cell_tensor)
+        new_h = o * torch.tanh(new_cell)
+
+        return new_h, new_cell
+
+
+class IntLSTMCell(nn.Module):
+
+    def __init__(
+        self, 
+        input_size, 
+        hidden_size,
+        p=0,
+        update_step=3000,
+        bits=8,
+        method="histogram",
+    ):
+        super().__init__()
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+
+        in_features = input_size + hidden_size 
+        out_features = hidden_size * 4
+
+        self.weight = torch.nn.Parameter(torch.Tensor(out_features, in_features))
+        self.bias = torch.nn.Parameter(torch.Tensor(out_features))
+        self.reset_parameters()
+
+        # quantization parameters
+        self.p = p
+        self.bits = bits
+        self.method = method
+        self.update_step = update_step
+        self.counter = 0
+
+    def reset_parameters(self):
+        nn.init.xavier_uniform_(self.weight)
+        nn.init.constant_(self.bias, 0.0)
+
+    def forward(self, input, state, p_delta):
+        # train with QuantNoise and evaluate the fully quantized network
+        if self.training:
+            p = self.p - p_delta
+            if self.jitter:
+                downside = 0.25 * p
+                upside = 0.5 * p
+                rand_val = torch.rand(1).item()
+                p -= downside
+                p += upside * rand_val
+        else:
+            p = 1
+
+        # update parameters every <update_step> iterations
+        if self.counter % self.update_step == 0:
+            self.scale = None
+            self.zero_point = None
+        self.counter += 1
+
+        # quantize weight
+        weight_quantized, self.scale, self.zero_point = emulate_int(
+            self.weight.detach(),
+            bits=self.bits,
+            method=self.method,
+            scale=self.scale,
+            zero_point=self.zero_point,
+        )
+
+        # mask to apply noise
+        mask = torch.zeros_like(self.weight)
+        mask.bernoulli_(1 - p)
+        noise = (weight_quantized - self.weight).masked_fill(mask.bool(), 0)
+
+        # using straight-through estimator (STE)
+        clamp_low = -self.scale * self.zero_point
+        clamp_high = self.scale * (2 ** self.bits - 1 - self.zero_point)
+        weight = (
+            torch.clamp(self.weight, clamp_low.item(), clamp_high.item())
+            + noise.detach()
+        )
+
+        hidden_tensor, cell_tensor = state
+
+        cat_input = torch.cat([input, hidden_tensor], dim=1)
+        fio_linear, u_linear = torch.split(
+            F.linear(cat_input, weight, self.bias),
+            self.hidden_size * 3, 
+            dim=1
+        )
+
+        f, i, o = torch.split(
+            torch.sigmoid(fio_linear),
+            self.hidden_size, 
+            dim=1
+        )
         u = torch.tanh(u_linear)
 
         new_cell = i * u + (f * cell_tensor)

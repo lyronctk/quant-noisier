@@ -17,7 +17,9 @@
     },
     "quant_params": {
         "bits": 32,
-        "noise_rate": 0
+        "noise_rate": 0,
+        "update_step": 1000,
+        "method": "histogram"
     },
     "model_params": {
 	    "cnn_ctc": false,

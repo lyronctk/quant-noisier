@@ -8,3 +8,6 @@ from .qconv import IntConv2d  # NOQA
 from .qemb import IntEmbedding  # NOQA
 from .qlinear import IntLinear  # NOQA
 from .qlearnedemb import IntLearnedPositionalEmbedding
+
+from .qlstm import LSTMCell 
+from .qlstm import IntLSTMCell

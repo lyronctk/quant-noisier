@@ -10,12 +10,33 @@ import torch.distributed as dist
 import torch.nn as nn
 
 from ..pq.utils import attrsetter, get_layers
-from .modules import ActivationQuantizer, IntConv2d, IntEmbedding, IntLinear, IntLearnedPositionalEmbedding
+from .modules import (
+    ActivationQuantizer, 
+    IntConv2d,
+    IntEmbedding, 
+    IntLinear, 
+    IntLearnedPositionalEmbedding,
+    LSTMCell,
+    IntLSTMCell
+)
 from .learned_positional_embedding import LearnedPositionalEmbedding
 
-MAPPING = {nn.Linear: IntLinear, nn.Embedding: IntEmbedding, nn.Conv2d: IntConv2d, LearnedPositionalEmbedding: IntLearnedPositionalEmbedding}
+MAPPING = {
+    nn.Linear: IntLinear, 
+    nn.Embedding: IntEmbedding, 
+    nn.Conv2d: IntConv2d, 
+    LearnedPositionalEmbedding: IntLearnedPositionalEmbedding,
+    LSTMCell: IntLSTMCell
+}
 
-def quantize_model_(model, p=0.2, bits=8, update_step=3000, jitter=False):
+def quantize_model_(
+    model, 
+    p=0.2, 
+    bits=8, 
+    update_step=3000, 
+    method="histogram",
+    jitter=False
+):
     """
     Replaces all modules with their scalar quantized counterpart and
     registers hooks to quantize the post-ativations of those modules.
@@ -41,7 +62,7 @@ def quantize_model_(model, p=0.2, bits=8, update_step=3000, jitter=False):
         module = attrgetter(layer)(model)
         if is_master_process:
             logging.info(
-                f"Quantizing layer {layer} with bits={bits} and QuantNoise={p}"
+                f" - Quantizing layer {layer} with bits={bits} and QuantNoise={p}"
             )
 
         # quantization params
@@ -49,7 +70,7 @@ def quantize_model_(model, p=0.2, bits=8, update_step=3000, jitter=False):
             "p": p,
             "update_step": update_step,
             "bits": bits,
-            "method": "histogram",
+            "method": method,
             "counter": 0,
             "jitter": jitter
         }
@@ -67,7 +88,7 @@ def quantize_model_(model, p=0.2, bits=8, update_step=3000, jitter=False):
             continue
 
         # activation quantization
-        a_q = ActivationQuantizer(quantized_module, p=0, bits=bits, method="histogram")
+        # a_q = ActivationQuantizer(quantized_module, p=0, bits=bits, method="histogram")
 
         # replace layer by its quantized counterpart
         attrsetter(layer)(model, quantized_module)

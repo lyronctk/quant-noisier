@@ -66,7 +66,7 @@ class IntLinear(nn.Module):
             nn.init.constant_(self.bias, 0.0)
         return
 
-    def forward(self, input, p_delta):
+    def forward(self, input, p_delta=0.0):
         # train with QuantNoise and evaluate the fully quantized network
         if self.training:
             p = self.p - p_delta
@@ -78,6 +78,7 @@ class IntLinear(nn.Module):
                 p += upside * rand_val
         else:
             p = 1
+
         # update parameters every 100 iterations
         if self.counter % self.update_step == 0:
             self.scale = None

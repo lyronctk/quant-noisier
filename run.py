@@ -21,7 +21,7 @@ def run(config_path, gpu_device=-1):
     system = SystemClass(config)
 
     if config.quant_params.noise_rate > 0:
-        system = quantize_ctc_system(system, config)
+        quantize_ctc_system(system, config)
 
     ckpt_callback = pl.callbacks.ModelCheckpoint(
         os.path.join(config.exp_dir, 'checkpoints'),
