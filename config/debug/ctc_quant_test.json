@@ -19,7 +19,8 @@
         "bits": 8,
         "noise_rate": 0.5,
         "update_step": 1000,
-        "method": "histogram"
+        "method": "histogram",
+        "jitter": false
     },
     "model_params": {
 	    "cnn_ctc": false,

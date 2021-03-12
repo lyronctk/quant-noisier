@@ -23,7 +23,8 @@ def quantize_model_scalar(model, params):
         p=params.noise_rate,
         bits=params.bits,
         update_step=params.update_step,
-        method=params.method
+        method=params.method,
+        jitter=params.jitter
     )
 
     logging.info('==\n' )
