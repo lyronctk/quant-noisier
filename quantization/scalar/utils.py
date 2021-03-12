@@ -49,7 +49,6 @@ def quantize_model_(
     """
 
     # quantize all layers
-
     quantized_layers = get_layers(model, "(.*?)")
     for layer in quantized_layers:
 
