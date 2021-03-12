@@ -43,7 +43,7 @@
         "validate_freq": 5,
         "patience": 10
     }, 
-    "num_epochs": 40,
+    "num_epochs": 20,
     "validate": true,
     "copy_checkpoint_freq": 5,
     "continue_from_checkpoint": null
