@@ -4,13 +4,19 @@
 # LICENSE file in the root directory of this source tree.
 
 import torch
-
 import logging
+
+# NEED TO ADD BELOW CODE SNIPPED TO if/else clause in _calculate_qparams() 
+#   - location: /anaconda/envs/views/lib/python3.7/site-packages/torch/quantization/observer.py
+#   - snippet:
+#     if self.quint1 is not None and self.quint1:
+#         qmin, qmax = 0, 1
+#     elif self.quint4 is not None and self.quint4:
+#         qmin, qmax = 0, 15
 
 def emulate_int(w, bits, method, scale=None, zero_point=None):
     q = globals()[f"emulate_int{bits}_{method}"]
     return q(w, scale=scale, zero_point=zero_point)
-
 
 def quantize(w, scale, zero_point, size=8):
     if size == 8:
@@ -68,16 +74,11 @@ def emulate_int4_histogram(w, scale=None, zero_point=None):
         obs.quant_min, obs.quant_max = 0, 15
         obs.has_customized_qrange = True
         _ = obs(w.float())
-        # scale, zero_point = calculate_uint4_qparams()
+        obs.quint4 = True
         scale, zero_point = obs.calculate_qparams()
         scale = scale.cuda().type_as(w)
         zero_point = zero_point.cuda().type_as(w)
     return quantize(w, scale, zero_point, size=4), scale, zero_point
-
-
-def calculate_uint4_qparams():
-    pass
-
 
 def emulate_int4_channel(w, scale=None, zero_point=None):
     if scale is None:
@@ -87,6 +88,7 @@ def emulate_int4_channel(w, scale=None, zero_point=None):
         obs.quant_min, obs.quant_max = 0, 15
         obs.has_customized_qrange = True
         _ = obs(w)
+        obs.quint4 = True
         scale, zero_point, ch_axis = obs.get_qparams()
         scale = scale.cuda().type_as(w)
         zero_point = zero_point.cuda().type_as(w)
@@ -98,6 +100,7 @@ def emulate_int4_tensor(w, scale=None, zero_point=None):
         obs.quant_min, obs.quant_max = 0, 15
         obs.has_customized_qrange = True
         _ = obs(w)
+        obs.quint4 = True
         scale, zero_point = obs.calculate_qparams()
         scale = scale.cuda().type_as(w)
         zero_point = zero_point.cuda().type_as(w)
