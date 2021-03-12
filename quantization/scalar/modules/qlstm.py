@@ -125,7 +125,10 @@ class LSTMFrame(nn.Module):
                         self.align_sequence(layer_input, lengths, True))))
 
                 for seq_idx, cell_input in step_input_gen:
-                    h, c = step_state = cell(cell_input, step_state, p_delta)
+                    if cell.__class__ == IntLSTMCell:
+                        h, c = step_state = cell(cell_input, step_state, p_delta)
+                    else:
+                        h, c = step_state = cell(cell_input, step_state)
                     direction_output[seq_idx] = h
                     step_state_list.append(step_state)
                 if direction == 1 and not uniform_length:
