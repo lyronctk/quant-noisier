@@ -87,9 +87,6 @@ def quantize_model_(
                 logging.info(f"Module {module} not yet supported for quantization")
             continue
 
-        # activation quantization
-        # a_q = ActivationQuantizer(quantized_module, p=0, bits=bits, method="histogram")
-
         # replace layer by its quantized counterpart
         attrsetter(layer)(model, quantized_module)
 
