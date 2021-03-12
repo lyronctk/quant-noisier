@@ -6,13 +6,13 @@
 import torch
 import logging
 
-# NEED TO ADD BELOW CODE SNIPPED TO if/else clause in _calculate_qparams() 
+# NEED TO ADD BELOW CODE SNIPPED TO if/else clause in _calculate_qparams() in ObserverBase class
 #   - location: /anaconda/envs/views/lib/python3.7/site-packages/torch/quantization/observer.py
 #   - snippet:
-#     if self.quint1 is not None and self.quint1:
-#         qmin, qmax = 0, 1
-#     elif self.quint4 is not None and self.quint4:
-#         qmin, qmax = 0, 15
+        # if hasattr(self, 'quint1') and self.quint1:
+        #     qmin, qmax = 0, 1
+        # elif hasattr(self, 'quint4') and self.quint4:
+        #     qmin, qmax = 0, 15
 
 def emulate_int(w, bits, method, scale=None, zero_point=None):
     q = globals()[f"emulate_int{bits}_{method}"]
