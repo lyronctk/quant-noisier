@@ -39,6 +39,7 @@ def emulate_int1_histogram(w, scale=None, zero_point=None):
         obs.quant_min, obs.quant_max = 0, 1
         obs.has_customized_qrange = True
         _ = obs(w.float())
+        obs.quint1 = True
         scale, zero_point = obs.calculate_qparams()
         scale = scale.cuda().type_as(w)
         zero_point = zero_point.cuda().type_as(w)
@@ -52,6 +53,7 @@ def emulate_int1_channel(w, scale=None, zero_point=None):
         obs.quant_min, obs.quant_max = 0, 1
         obs.has_customized_qrange = True
         _ = obs(w)
+        obs.quint1 = True
         scale, zero_point, ch_axis = obs.get_qparams()
         scale = scale.cuda().type_as(w)
         zero_point = zero_point.cuda().type_as(w)
@@ -63,6 +65,7 @@ def emulate_int1_tensor(w, scale=None, zero_point=None):
         obs.quant_min, obs.quant_max = 0, 1
         obs.has_customized_qrange = True
         _ = obs(w)
+        obs.quint1 = True
         scale, zero_point = obs.calculate_qparams()
         scale = scale.cuda().type_as(w)
         zero_point = zero_point.cuda().type_as(w)
