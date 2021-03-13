@@ -24,7 +24,8 @@ def quantize_model_scalar(model, params):
         bits=params.bits,
         update_step=params.update_step,
         method=params.method,
-        jitter=params.jitter
+        jitter=params.jitter,
+        qn_lambda=params.qn_lambda
     )
 
     logging.info('==\n' )

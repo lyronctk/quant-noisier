@@ -35,7 +35,8 @@ def quantize_model_(
     bits=8, 
     update_step=3000, 
     method="histogram",
-    jitter=False
+    jitter=False,
+    qn_lambda=0.0
 ):
     """
     Replaces all modules with their scalar quantized counterpart and
@@ -61,7 +62,7 @@ def quantize_model_(
         module = attrgetter(layer)(model)
         if is_master_process:
             logging.info(
-                f" - Quantizing layer {layer} with bits={bits} and QuantNoise={p}"
+                f" - Quantizing layer {layer} with bits={bits} && p={p} && qn_lambda={qn_lambda}"
             )
 
         # quantization params

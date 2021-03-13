@@ -1,6 +1,6 @@
 {
     "exp_base": "/home/god/quant_noisier_speech/sandbox",
-    "exp_name": "c_quant_noise_int1",
+    "exp_name": "c_quant_int1",
     "system": "CTC_System",
     "cuda": true,
     "gpu_device": 7,
@@ -17,7 +17,7 @@
     },
     "quant_params": {
         "bits": 1,
-        "noise_rate": 0.5,
+        "noise_rate": 0.00001,
         "update_step": 1000,
         "method": "histogram",
         "jitter": false,

@@ -20,7 +20,8 @@
         "noise_rate": 0.5,
         "update_step": 1000,
         "method": "histogram",
-        "jitter": true
+        "jitter": true,
+        "qn_lambda": 0
     },
     "model_params": {
 	    "cnn_ctc": false,
