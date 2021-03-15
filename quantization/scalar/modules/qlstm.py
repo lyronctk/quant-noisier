@@ -262,8 +262,6 @@ class IntLSTMCell(nn.Module):
         self.counter += 1
 
         # quantize weight
-        if not self.training:
-            breakpoint()
         weight_quantized, self.scale, self.zero_point = emulate_int(
             self.weight.detach(),
             bits=self.bits,
