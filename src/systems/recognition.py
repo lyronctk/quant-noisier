@@ -85,12 +85,12 @@ class CTC_System(pl.LightningModule):
 
     def create_model(self):
         self.create_asr_model()
-        self.create_auxiliary_models()
+        # self.create_auxiliary_models()
 
     def configure_optimizers(self):
         parameters = chain(
             self.asr_model.parameters(),
-            self.task_type_model.parameters(),
+            # self.task_type_model.parameters(),
         )
         optim = torch.optim.AdamW(
             parameters,
@@ -132,43 +132,37 @@ class CTC_System(pl.LightningModule):
         char_input_lengths = batch[2].to(self.device)
         char_labels = batch[3].to(self.device)
         char_label_lengths = batch[4].to(self.device)
-        task_type_labels = batch[5].to(self.device)
-        batch_size = indices.size(0)
+        # task_type_labels = batch[5].to(self.device)
+        # batch_size = indices.size(0)
 
         char_log_probs, embedding = self.forward(char_inputs, char_input_lengths,
                                                  char_labels, char_label_lengths)
-        task_type_log_probs = self.task_type_model(embedding)
+        # task_type_log_probs = self.task_type_model(embedding)
 
-        # asr_loss = self.get_asr_loss(
-        #     char_log_probs,
-        #     char_labels,
-        #     char_input_lengths,
-        #     char_label_lengths,
-        # )
-        task_type_loss = self.task_type_model.get_loss(
-            task_type_log_probs,
-            task_type_labels,
+        asr_loss = self.get_asr_loss(
+            char_log_probs,
+            char_labels,
+            char_input_lengths,
+            char_label_lengths,
         )
-        loss = task_type_loss
+        # task_type_loss = self.task_type_model.get_loss(
+        #     task_type_log_probs,
+        #     task_type_labels,
+        # )
+        loss = asr_loss
 
         with torch.no_grad():
-            # asr_wer = self.get_asr_decode_error(
-            #     char_log_probs,
-            #     char_input_lengths,
-            #     char_labels,
-            #     char_label_lengths,
-            # )
-
-            task_type_preds = torch.argmax(task_type_log_probs, dim=1)
-            num_task_type_correct = (task_type_preds == task_type_labels).sum().item()
-            num_task_type_total = batch_size
+            asr_wer = self.get_asr_decode_error(
+                char_log_probs,
+                char_input_lengths,
+                char_labels,
+                char_label_lengths,
+            )
 
             prefix = 'train' if train else 'val'
-
             metrics = {
-                f'{prefix}_task_type_loss': task_type_loss,
-                f'{prefix}_num_task_type_correct': num_task_type_correct,
-                f'{prefix}_num_task_type_total': num_task_type_total,
+                f'{prefix}_asr_loss': asr_loss,
+                f'{prefix}_asr_wer': asr_wer,
             }
 
         return loss, metrics
@@ -198,13 +192,12 @@ class CTC_System(pl.LightningModule):
             if key not in ['dialog_acts_preds_npy', 'dialog_acts_labels_npy']:
                 metrics[key] = torch.tensor([elem[key]
                                             for elem in outputs]).float().mean()
-        metric_keys = ['task_type']
-
-        for name in metric_keys:
-            num_correct = sum([out[f'val_num_{name}_correct'] for out in outputs])
-            num_total = sum([out[f'val_num_{name}_total'] for out in outputs])
-            val_acc = num_correct / float(num_total)
-            metrics[f'val_{name}_acc'] = val_acc
+        # metric_keys = ['task_type']
+        # for name in metric_keys:
+        #     num_correct = sum([out[f'val_num_{name}_correct'] for out in outputs])
+        #     num_total = sum([out[f'val_num_{name}_total'] for out in outputs])
+        #     val_acc = num_correct / float(num_total)
+        #     metrics[f'val_{name}_acc'] = val_acc
 
         return {'val_loss': metrics['val_loss'], 'log': metrics}
 
