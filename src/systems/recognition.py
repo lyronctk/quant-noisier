@@ -220,6 +220,6 @@ def create_dataloader(dataset, config, shuffle=True):
         batch_size=config.optim_params.batch_size,
         shuffle=shuffle, 
         pin_memory=True,
-        num_workers=config.data_loader_workers,
+        num_workers=config.data_loader_workers
     )
     return loader

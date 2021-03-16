@@ -3,6 +3,7 @@ import json
 import torch
 import pickle
 import string
+import pylab
 import random
 import librosa
 import torchaudio
@@ -14,6 +15,7 @@ from collections import Counter
 import nlpaug.augmenter.audio as naa
 import nlpaug.augmenter.spectrogram as nas
 from torchvision.transforms import Normalize
+import random
 
 from torch.utils.data import Dataset
 from src.datasets.librispeech import (
@@ -372,6 +374,7 @@ class HarperValley(BaseHarperValley):
         # do some processing to pull out labels
         task_type_vocab, dialog_acts_vocab, speaker_id_set = self.get_vocabs(self.data)
 
+        self.data_split = split
         if split == 'train':
             data = train_data
         elif split == 'val':
@@ -564,6 +567,49 @@ class HarperValley(BaseHarperValley):
         padded[:length] = transcript_labels
         return padded, length
 
+    def freq_mask(self, spec, num_masks=3, replace_with_zero=True):
+        cloned = np.copy(spec)
+        num_mel_channels = cloned.shape[0]
+
+        MIN_F = 1
+        F = max(round(num_mel_channels * 0.1), MIN_F + 1)
+        
+        for i in range(0, num_masks):        
+            f = random.randrange(MIN_F, F)
+            f_zero = random.randrange(0, num_mel_channels - f)
+
+            # avoids randrange error if values are equal and range is empty
+            if (f_zero == f_zero + f): return cloned
+
+            mask_end = random.randrange(f_zero, f_zero + f) 
+            if (replace_with_zero): cloned[f_zero:mask_end,:] = 0
+            else: cloned[f_zero:mask_end,:] = cloned.mean()
+        
+        return cloned
+
+    def time_mask(self, spec, num_masks=3, replace_with_zero=True):
+        cloned = np.copy(spec)
+        len_spectro = cloned.shape[1]
+
+        MIN_T = 1
+        T = max(round(len_spectro * 0.1), MIN_T + 1)
+        
+        for i in range(0, num_masks):
+            t = random.randrange(MIN_T, T)
+            t_zero = random.randrange(0, len_spectro - t)
+
+            # avoids randrange error if values are equal and range is empty
+            if (t_zero == t_zero + t): return cloned
+
+            mask_end = random.randrange(t_zero, t_zero + t)
+            if (replace_with_zero): cloned[:,t_zero:mask_end] = 0
+            else: cloned[:,t_zero:mask_end] = cloned.mean()
+
+        return cloned
+
+    def bernoulli(self, probability):
+        return random.random() < probability
+
     def __getitem__(self, index):
         wavpath = self.wavpaths[index]
         wav, sr = torchaudio.load(wavpath)
@@ -586,6 +632,25 @@ class HarperValley(BaseHarperValley):
             sr=sr,
             n_mels=self.n_mels,
         )
+
+        # == PLOT MEL SPEC
+        # wav_mel_db = librosa.power_to_db(wav_mel, ref=np.max)
+        # librosa.display.specshow(wav_mel_db, x_axis='s', y_axis='log')
+        # pylab.savefig('test.jpg')
+        # pylab.close()
+
+        # wav_mel_db_aug = librosa.power_to_db(self.time_mask(self.freq_mask(wav_mel)), ref=np.max)
+        # librosa.display.specshow(wav_mel_db_aug, x_axis='s', y_axis='log')
+        # pylab.savefig('test_aug.jpg')
+        # pylab.close()
+
+        # exit()
+        if self.data_split == 'train' and self.bernoulli(0.5):
+            wav_mel = self.freq_mask(wav_mel)
+        if self.data_split == 'train' and self.bernoulli(0.5):
+            wav_mel = self.time_mask(wav_mel)
+        # ==
+
         wav_logmel = np.log(wav_mel + 1e-9)
         wav_logmel = librosa.util.normalize(wav_logmel).T
 
@@ -809,7 +874,7 @@ class HarperValleyWav2VecTransfer(BaseHarperValleyTransfer):
         else:
             raise Exception(f'Caller intent {caller_intent} not supported.')
 
-        self.split = split
+        self.data_split = split
         self.wavpaths = wavpaths
         self.labels = labels
         self.num_class = num_class
