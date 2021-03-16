@@ -1,6 +1,6 @@
 {
     "exp_base": "/home/god/quant_noisier_speech/sandbox",
-    "exp_name": "asr",
+    "exp_name": "c_uncompressed",
     "system": "CTC_System",
     "cuda": true,
     "gpu_device": 7,
@@ -16,7 +16,7 @@
         "speaker_split": false
     },
     "quant_params": {
-        "bits": 32,
+        "bits": 8,
         "noise_rate": 0,
         "update_step": 1000,
         "method": "histogram",
@@ -44,7 +44,7 @@
         "validate_freq": 5,
         "patience": 10
     }, 
-    "num_epochs": 40,
+    "num_epochs": 20,
     "validate": true,
     "copy_checkpoint_freq": 5,
     "continue_from_checkpoint": null

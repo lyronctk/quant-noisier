@@ -1,6 +1,6 @@
 {
     "exp_base": "/home/god/quant_noisier_speech/sandbox",
-    "exp_name": "asr_quant_int8",
+    "exp_name": "c_quant_int8",
     "system": "CTC_System",
     "cuda": true,
     "gpu_device": 7,
@@ -44,7 +44,7 @@
         "validate_freq": 5,
         "patience": 10
     }, 
-    "num_epochs": 40,
+    "num_epochs": 20,
     "validate": true,
     "copy_checkpoint_freq": 5,
     "continue_from_checkpoint": null

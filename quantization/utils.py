@@ -9,10 +9,10 @@ def quantize_ctc_system(system, config):
         params=config.quant_params
     )
 
-    # system.task_type_model = quantize_model_scalar(
-    #     system.task_type_model,
-    #     params=config.quant_params
-    # )
+    system.task_type_model = quantize_model_scalar(
+        system.task_type_model,
+        params=config.quant_params
+    )
 
 
 def quantize_model_scalar(model, params):
